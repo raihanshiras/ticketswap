@@ -797,6 +797,25 @@
             #list-ticket-form #submit-ticket-btn { min-height: 55px !important; }
         }
 
+
+        /* Keep reserved space for decorative prefixes (₹ and +91) inside inputs. */
+        #list-ticket-form #form-original-price,
+        #list-ticket-form #form-selling-price {
+            padding-left: 2.55rem !important;
+        }
+        #list-ticket-form #form-phone {
+            padding-left: 3.55rem !important;
+        }
+        #list-ticket-form .relative > span.absolute {
+            z-index: 1;
+            pointer-events: none;
+            line-height: 1;
+            white-space: nowrap;
+        }
+        #list-ticket-form .relative:has(> span.absolute) .form-control {
+            position: relative;
+        }
+
 </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between custom-scrollbar pb-20 md:pb-0">
@@ -848,7 +867,7 @@
             <div class="hero-banner relative rounded-2xl overflow-hidden bg-gradient-to-r from-brand-700 via-purple-900 to-gray-900 p-6 sm:p-8 text-white border border-brand-500/20 shadow-2xl">
                 <div class="relative z-10 max-w-2xl space-y-3">
                     <span class="bg-amber-500/20 text-amber-300 text-xs font-bold px-3 py-1 rounded-full border border-amber-500/30">Student-to-Student Marketplace</span>
-                    <h2 class="text-2xl sm:text-4xl font-extrabold tracking-tight leading-tight">Got extra passes? Need a Workshop ticket?</h2>
+                    <h2 class="text-2xl sm:text-4xl font-extrabold tracking-tight leading-tight">Got extra passes? Need a ProNite ticket?</h2>
                     <p class="text-gray-300 text-sm sm:text-base">Buy and sell Thatwa NIT Calicut event passes directly with students safely via WhatsApp & Phone.</p>
                 </div>
             </div>
@@ -885,7 +904,7 @@
             <!-- Ticket Grid Header -->
             <div class="flex justify-between items-center text-sm text-gray-400">
                 <span>Showing <strong id="ticket-count" class="text-white">0</strong> listings</span>
-                
+              
             </div>
 
             <!-- Ticket Grid Loading State -->
