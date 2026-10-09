@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TicketSwap | Student Ticket Marketplace - Thatwa NIT Calicut</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#fff1f2',
+                            100: '#ffe4e6',
+                            500: '#f43f5e',
+                            600: '#e11d48',
+                            700: '#be123c',
+                            accent: '#06b6d4',
+                            glow: '#38bdf8'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- FontAwesome & JSZip for ZIP download capabilities -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #0b0f19;
+            color: #f3f4f6;
+        }
+        .glass-card {
+            background: rgba(17, 24, 39, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .neon-glow {
+            box-shadow: 0 0 20px rgba(244, 63, 94, 0.25);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #111827;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #374151;
+            border-radius: 4px;
+        }
+        .form-control {
+            min-height: 46px;
+            border-radius: 0.75rem;
+            border: 1px solid rgba(75, 85, 99, 0.8);
+            background: #111827;
+            color: #f9fafb;
+            padding: 0.7rem 0.9rem;
+            font-size: 0.9rem;
+            transition: border-color 150ms ease, box-shadow 150ms ease, background 150ms ease;
+        }
+        .form-control::placeholder { color: #6b7280; }
+        .form-control:focus {
+            outline: none;
+            border-color: #f43f5e;
+            box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.14);
+            background: #0f172a;
+        }
+        .form-control:invalid:not(:placeholder-shown) { border-color: rgba(248, 113, 113, 0.65); }
+        select.form-control { padding-right: 2.25rem; }
+        input[type="datetime-local"].form-control { color-scheme: dark; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between custom-scrollbar pb-20 md:pb-0">
+
+    <header class="sticky top-0 z-40 glass-card border-b border-gray-800/80 px-4 py-3 sm:px-8">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3 cursor-pointer" onclick="switchTab('explore')">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-brand-accent flex items-center justify-center font-extrabold text-xl text-white shadow-lg">
+                    <i class="fa-solid fa-ticket"></i>
+                </div>
+                <div>
+                    <h1 class="font-extrabold text-lg sm:text-xl tracking-tight bg-gradient-to-r from-white via-gray-200 to-brand-500 bg-clip-text text-transparent">
+                        TicketSwap <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">Unofficial</span>
+                    </h1>
+                    <p class="text-xs text-gray-400 hidden sm:block">Thatwa NIT Calicut Student Ticket Exchange</p>
+                </div>
+            </div>
+
+            <!-- Desktop Nav Tabs -->
+            <nav class="hidden md:flex items-center gap-1 bg-gray-900/80 p-1 rounded-xl border border-gray-800">
+                <button id="nav-explore" onclick="switchTab('explore')" class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center gap-2 text-white bg-brand-600">
+                    <i class="fa-solid font-bold fa-ticket"></i> Explore Tickets
+                </button>
+                <button id="nav-list" onclick="switchTab('list')" class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center gap-2 text-gray-400 hover:text-white">
+                    <i class="fa-solid fa-plus-circle"></i> List a Ticket
+                </button>
+                <button id="nav-mylistings" onclick="switchTab('mylistings')" class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center gap-2 text-gray-400 hover:text-white">
+                    <i class="fa-solid fa-user-tag"></i> My Listings
+                </button>
+            </nav>
+
+            <div class="flex items-center gap-3">
+                <div id="user-status-pill" class="text-xs bg-gray-800 border border-gray-700 px-2.5 py-1.5 rounded-lg text-gray-300 flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span id="user-status-text">Connecting...</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto w-full px-4 sm:px-8 py-6 flex-1">
+        
+        <!-- ALERT/TOAST CONTAINER -->
+        <div id="toast-container" class="fixed bottom-20 md:bottom-6 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
+
+        <!-- 1. EXPLORE TICKETS TAB -->
+        <section id="tab-explore-view" class="space-y-6">
+            <!-- Hero Banner -->
+            <div class="relative rounded-2xl overflow-hidden bg-gradient-to-r from-brand-700 via-purple-900 to-gray-900 p-6 sm:p-8 text-white border border-brand-500/20 shadow-2xl">
+                <div class="relative z-10 max-w-2xl space-y-3">
+                    <span class="bg-amber-500/20 text-amber-300 text-xs font-bold px-3 py-1 rounded-full border border-amber-500/30">Student-to-Student Marketplace</span>
+                    <h2 class="text-2xl sm:text-4xl font-extrabold tracking-tight leading-tight">Got extra passes? Need a ProNite ticket?</h2>
+                    <p class="text-gray-300 text-sm sm:text-base">Buy and sell Thatwa NIT Calicut event passes directly with students safely via WhatsApp & Phone.</p>
+                </div>
+            </div>
+
+            <!-- Filters Section -->
+            <div class="glass-card p-4 rounded-xl flex flex-col md:flex-row gap-3 items-center justify-between">
+                <div class="relative w-full md:w-96">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-3.5 text-gray-400 text-sm"></i>
+                    <input type="text" id="search-input" onkeyup="filterTickets()" placeholder="Search ProNite, Workshop, Choreo..." class="w-full bg-gray-900 border border-gray-700 rounded-lg pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:border-brand-500 text-white placeholder-gray-500">
+                </div>
+
+                <div class="flex flex-wrap sm:flex-nowrap gap-2 w-full md:w-auto">
+                    <select id="filter-event-type" onchange="filterTickets()" class="bg-gray-900 border border-gray-700 text-sm text-gray-300 rounded-lg px-3 py-2.5 focus:outline-none focus:border-brand-500 flex-1 sm:flex-none">
+                        <option value="ALL">All Categories</option>
+                        <option value="Pronite">Pro Nite / Musical Night</option>
+                        <option value="Choreonite">Choreonite / Dance</option>
+                        <option value="Workshop">Technical Workshop</option>
+                        <option value="Tech Expo">Tech Expo & Gaming</option>
+                        <option value="Other">Other Events</option>
+                    </select>
+
+                    <select id="filter-status" onchange="filterTickets()" class="bg-gray-900 border border-gray-700 text-sm text-gray-300 rounded-lg px-3 py-2.5 focus:outline-none focus:border-brand-500 flex-1 sm:flex-none">
+                        <option value="AVAILABLE">Available Only</option>
+                        <option value="ALL">All Statuses</option>
+                        <option value="SOLD">Sold Out</option>
+                    </select>
+
+                    <button onclick="resetFilters()" class="bg-gray-800 hover:bg-gray-700 text-gray-300 px-3 py-2.5 rounded-lg text-sm transition">
+                        <i class="fa-solid fa-rotate-left"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Ticket Grid Header -->
+            <div class="flex justify-between items-center text-sm text-gray-400">
+                <span>Showing <strong id="ticket-count" class="text-white">0</strong> listings</span>
+                <span class="text-xs text-gray-500"><i class="fa-solid fa-bolt text-amber-400"></i> Live Firestore Database</span>
+            </div>
+
+            <!-- Ticket Grid Loading State -->
+            <div id="tickets-loading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="glass-card p-5 rounded-2xl animate-pulse space-y-4">
+                    <div class="h-6 bg-gray-800 rounded w-3/4"></div>
+                    <div class="h-4 bg-gray-800 rounded w-1/2"></div>
+                    <div class="h-10 bg-gray-800 rounded"></div>
+                </div>
+                <div class="glass-card p-5 rounded-2xl animate-pulse space-y-4 hidden md:block">
+                    <div class="h-6 bg-gray-800 rounded w-3/4"></div>
+                    <div class="h-4 bg-gray-800 rounded w-1/2"></div>
+                    <div class="h-10 bg-gray-800 rounded"></div>
+                </div>
+            </div>
+
+            <div id="tickets-error" class="hidden rounded-xl border border-red-500/30 bg-red-500/10 p-5 text-sm text-red-200">
+                <div class="flex items-start gap-3">
+                    <i class="fa-solid fa-triangle-exclamation mt-0.5"></i>
+                    <div class="flex-1">
+                        <p class="font-bold">Could not connect to the ticket database</p>
+                        <p id="tickets-error-message" class="text-xs text-red-200/80 mt-1">Check Firestore setup and rules.</p>
+                        <button type="button" onclick="retryTicketConnection()" class="mt-3 rounded-lg border border-red-300/30 px-3 py-2 text-xs font-semibold hover:bg-red-500/10">Try again</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ticket Grid -->
+            <div id="tickets-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+            
+            <!-- Empty State -->
+            <div id="empty-state" class="hidden text-center py-16 space-y-3 glass-card rounded-2xl">
+                <div class="w-16 h-16 mx-auto bg-gray-800 rounded-full flex items-center justify-center text-gray-500 text-2xl">
+                    <i class="fa-solid fa-ticket-simple"></i>
+                </div>
+                <h3 class="text-lg font-bold text-white">No tickets found</h3>
+                <p class="text-sm text-gray-400 max-w-sm mx-auto">Be the first student to list a ticket on TicketSwap!</p>
+                <button onclick="switchTab('list')" class="mt-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold px-4 py-2 rounded-lg transition">
+                    List a Ticket Now
+                </button>
+            </div>
+        </section>
+
+        <!-- 2. LIST TICKET TAB -->
+        <section id="tab-list-view" class="hidden max-w-3xl mx-auto space-y-5">
+            <div class="rounded-2xl border border-gray-800 bg-gray-900/70 overflow-hidden">
+                <div class="px-5 py-5 sm:px-7 sm:py-6 border-b border-gray-800 bg-gradient-to-r from-gray-900 via-gray-900 to-rose-950/30">
+                    <div class="flex items-start gap-3">
+                        <div class="w-11 h-11 shrink-0 rounded-xl bg-brand-500/15 border border-brand-500/25 flex items-center justify-center text-brand-500 text-lg">
+                            <i class="fa-solid fa-ticket"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-[11px] uppercase tracking-[0.18em] font-bold text-brand-400 mb-1">Seller workspace</p>
+                            <h2 class="text-xl sm:text-2xl font-extrabold text-white">List a ticket</h2>
+                            <p class="text-sm text-gray-400 mt-1">Add the essentials. Students can contact you directly to arrange the exchange.</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-2 mt-4 text-[11px] text-gray-300">
+                        <span class="inline-flex items-center gap-1.5 rounded-full bg-gray-800 px-3 py-1.5"><i class="fa-solid fa-circle-check text-emerald-400"></i> Quick form</span>
+                        <span class="inline-flex items-center gap-1.5 rounded-full bg-gray-800 px-3 py-1.5"><i class="fa-solid fa-shield-halved text-sky-400"></i> No payment collected here</span>
+                    </div>
+                </div>
+
+                <form id="list-ticket-form" onsubmit="handleListTicket(event)" class="p-5 sm:p-7 space-y-7">
+                    <section class="space-y-4" aria-labelledby="event-details-heading">
+                        <div class="flex items-center gap-2">
+                            <span class="w-7 h-7 rounded-lg bg-gray-800 border border-gray-700 flex items-center justify-center text-xs font-bold text-gray-200">1</span>
+                            <div>
+                                <h3 id="event-details-heading" class="text-sm font-bold text-white">Event details</h3>
+                                <p class="text-xs text-gray-500">What is the ticket for?</p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="sm:col-span-2">
+                                <label for="form-event-name" class="block text-sm font-semibold text-gray-200 mb-1.5">Event name <span class="text-brand-400">*</span></label>
+                                <input type="text" id="form-event-name" required maxlength="120" autocomplete="off" placeholder="e.g. ProNite DJ Night" class="form-control w-full">
+                            </div>
+                            <div>
+                                <label for="form-category" class="block text-sm font-semibold text-gray-200 mb-1.5">Category <span class="text-brand-400">*</span></label>
+                                <select id="form-category" required class="form-control w-full">
+                                    <option value="Pronite">Pro Nite / Musical Night</option>
+                                    <option value="Choreonite">Choreonite / Dance</option>
+                                    <option value="Workshop">Technical Workshop</option>
+                                    <option value="Tech Expo">Tech Expo & Gaming</option>
+                                    <option value="Other">Other Events</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="form-datetime" class="block text-sm font-semibold text-gray-200 mb-1.5">Event date &amp; time <span class="text-brand-400">*</span></label>
+                                <input type="datetime-local" id="form-datetime" required class="form-control w-full">
+                            </div>
+                        </div>
+                    </section>
+
+                    <div class="border-t border-gray-800"></div>
+
+                    <section class="space-y-4" aria-labelledby="ticket-price-heading">
+                        <div class="flex items-center gap-2">
+                            <span class="w-7 h-7 rounded-lg bg-gray-800 border border-gray-700 flex items-center justify-center text-xs font-bold text-gray-200">2</span>
+                            <div>
+                                <h3 id="ticket-price-heading" class="text-sm font-bold text-white">Tickets &amp; price</h3>
+                                <p class="text-xs text-gray-500">Prices are for one ticket; quantity is listed separately.</p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label for="form-quantity" class="block text-sm font-semibold text-gray-200 mb-1.5">Quantity <span class="text-brand-400">*</span></label>
+                                <input type="number" min="1" max="10" step="1" value="1" id="form-quantity" required inputmode="numeric" class="form-control w-full">
+                                <p class="text-[11px] text-gray-500 mt-1.5">How many tickets?</p>
+                            </div>
+                            <div>
+                                <label for="form-original-price" class="block text-sm font-semibold text-gray-200 mb-1.5">Original price <span class="text-gray-500 font-normal">Optional</span></label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">₹</span>
+                                    <input type="number" min="0" step="1" id="form-original-price" placeholder="500" inputmode="numeric" class="form-control w-full pl-8">
+                                </div>
+                                <p class="text-[11px] text-gray-500 mt-1.5">Printed / original price</p>
+                            </div>
+                            <div>
+                                <label for="form-selling-price" class="block text-sm font-semibold text-gray-200 mb-1.5">Your price <span class="text-brand-400">*</span></label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">₹</span>
+                                    <input type="number" min="0" step="1" id="form-selling-price" required placeholder="350" inputmode="numeric" class="form-control w-full pl-8">
+                                </div>
+                                <p class="text-[11px] text-gray-500 mt-1.5">Amount per ticket</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <div class="border-t border-gray-800"></div>
+
+                    <section class="space-y-4" aria-labelledby="seller-contact-heading">
+                        <div class="flex items-center gap-2">
+                            <span class="w-7 h-7 rounded-lg bg-gray-800 border border-gray-700 flex items-center justify-center text-xs font-bold text-gray-200">3</span>
+                            <div>
+                                <h3 id="seller-contact-heading" class="text-sm font-bold text-white">Your contact details</h3>
+                                <p class="text-xs text-gray-500">Buyers need a way to reach you.</p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="form-seller-name" class="block text-sm font-semibold text-gray-200 mb-1.5">Your name <span class="text-brand-400">*</span></label>
+                                <input type="text" id="form-seller-name" required maxlength="80" autocomplete="name" placeholder="e.g. Rahul (S5 CSE)" class="form-control w-full">
+                            </div>
+                            <div>
+                                <label for="form-phone" class="block text-sm font-semibold text-gray-200 mb-1.5">WhatsApp number <span class="text-brand-400">*</span></label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-semibold">+91</span>
+                                    <input type="tel" id="form-phone" required placeholder="10-digit number" inputmode="numeric" maxlength="10" pattern="[0-9]{10}" autocomplete="tel-national" class="form-control w-full pl-12">
+                                </div>
+                                <p class="text-[11px] text-gray-500 mt-1.5">Shown to interested buyers in your listing.</p>
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label for="form-notes" class="block text-sm font-semibold text-gray-200 mb-1.5">Extra details <span class="text-gray-500 font-normal">Optional</span></label>
+                                <textarea id="form-notes" rows="3" maxlength="500" placeholder="Pickup spot, seat details, transfer instructions, etc." class="form-control w-full resize-y"></textarea>
+                            </div>
+                        </div>
+                    </section>
+
+                    <div class="rounded-xl border border-sky-500/20 bg-sky-500/5 px-4 py-3 flex items-start gap-3">
+                        <i class="fa-solid fa-circle-info text-sky-400 mt-0.5"></i>
+                        <p class="text-xs text-gray-400 leading-relaxed">TicketSwap only connects students. Confirm the ticket is transferable and verify payment and ticket validity yourself before handing it over.</p>
+                    </div>
+
+                    <button type="submit" id="submit-ticket-btn" class="w-full bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-500 hover:to-brand-600 disabled:opacity-60 disabled:cursor-wait text-white font-bold py-3.5 px-4 rounded-xl shadow-lg transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-paper-plane"></i> Publish ticket
+                    </button>
+                    <p class="text-center text-xs text-gray-500">Fields marked * are required.</p>
+                </form>
+            </div>
+        </section>
+
+        <!-- 3. MY LISTINGS TAB -->
+        <section id="tab-mylistings-view" class="hidden space-y-6">
+            <div class="glass-card p-6 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-user-gear text-brand-500"></i> My TicketSwap Listings
+                    </h2>
+                    <p class="text-xs text-gray-400 mt-0.5">Manage or mark your tickets as sold.</p>
+                </div>
+                <div class="text-xs bg-gray-900 px-3 py-2 rounded-lg border border-gray-800 text-gray-400">
+                    Firebase Auth UID: <span id="my-user-id" class="text-brand-400 font-mono">Authenticating...</span>
+                </div>
+            </div>
+
+            <div id="my-tickets-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+
+            <div id="my-tickets-empty" class="hidden text-center py-12 glass-card rounded-2xl space-y-3">
+                <i class="fa-solid fa-folder-open text-4xl text-gray-600"></i>
+                <p class="text-gray-400 text-sm">You haven't listed any tickets yet.</p>
+                <button onclick="switchTab('list')" class="bg-brand-600 text-white text-xs px-4 py-2 rounded-lg font-semibold hover:bg-brand-700 transition">
+                    + Add Your First Ticket
+                </button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- CONTACT SELLER MODAL -->
+    <div id="contact-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="glass-card max-w-md w-full rounded-2xl p-6 border border-gray-700 space-y-5 relative animate-in fade-in zoom-in duration-200">
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-brand-500/20 text-brand-500 flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-ticket"></i>
+                </div>
+                <div>
+                    <h3 id="modal-event-title" class="font-bold text-white text-base">Event Name</h3>
+                    <p id="modal-seller-name" class="text-xs text-gray-400">Seller: Rahul</p>
+                </div>
+            </div>
+
+            <div class="bg-gray-900/90 p-4 rounded-xl border border-gray-800 space-y-2">
+                <div class="flex justify-between text-xs text-gray-400">
+                    <span>Price requested:</span>
+                    <strong id="modal-price" class="text-emerald-400 text-sm font-bold">₹0</strong>
+                </div>
+                <div id="modal-qty-container" class="flex justify-between text-xs text-gray-400 pt-1">
+                    <span>Available Quantity:</span>
+                    <strong id="modal-quantity" class="text-white font-bold">1 Pass</strong>
+                </div>
+                <div id="modal-notes-container" class="text-xs text-gray-300 border-t border-gray-800 pt-2">
+                    <span class="text-gray-500">Note:</span> <span id="modal-notes">No notes added</span>
+                </div>
+            </div>
+
+            <div class="space-y-2 pt-2">
+                <a id="modal-whatsapp-link" target="_blank" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition text-sm">
+                    <i class="fa-brands fa-whatsapp text-lg"></i> Chat on WhatsApp
+                </a>
+                
+                <a id="modal-call-link" class="w-full bg-gray-800 hover:bg-gray-700 text-white font-semibold py-2.5 rounded-xl flex items-center justify-center gap-2 transition text-sm border border-gray-700">
+                    <i class="fa-solid fa-phone text-xs"></i> Direct Call (<span id="modal-phone-num"></span>)
+                </a>
+
+                <button onclick="copyPhoneNumber()" class="w-full text-xs text-gray-400 hover:text-white py-1">
+                    <i class="fa-solid fa-copy"></i> Copy Phone Number
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Bottom Navigation Bar -->
+    <div class="md:hidden fixed bottom-0 left-0 right-0 glass-card border-t border-gray-800 z-40 px-6 py-2 flex justify-around items-center">
+        <button onclick="switchTab('explore')" id="mobile-nav-explore" class="flex flex-col items-center gap-1 text-brand-500">
+            <i class="fa-solid fa-ticket text-lg"></i>
+            <span class="text-[10px] font-medium">Explore</span>
+        </button>
+        <button onclick="switchTab('list')" id="mobile-nav-list" class="flex flex-col items-center gap-1 text-gray-400">
+            <i class="fa-solid fa-plus-circle text-lg"></i>
+            <span class="text-[10px] font-medium">List Ticket</span>
+        </button>
+        <button onclick="switchTab('mylistings')" id="mobile-nav-mylistings" class="flex flex-col items-center gap-1 text-gray-400">
+            <i class="fa-solid fa-user-tag text-lg"></i>
+            <span class="text-[10px] font-medium">My Listings</span>
+        </button>
+    </div>
+
+    <!-- Firebase SDK Imports & Application Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { 
+            getAuth, 
+            signInAnonymously, 
+            onAuthStateChanged 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getFirestore, 
+            collection, 
+            doc, 
+            setDoc, 
+            onSnapshot, 
+            updateDoc, 
+            deleteDoc, 
+            serverTimestamp 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Provided Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBO0j8u36IkS4Y-c5TV0WLwVQex4n54A1A",
+            authDomain: "ticketswap-9535e.firebaseapp.com",
+            projectId: "ticketswap-9535e",
+            storageBucket: "ticketswap-9535e.firebasestorage.app",
+            messagingSenderId: "678314105074",
+            appId: "1:678314105074:web:85c211751864d92cc1186b",
+            measurementId: "G-T6D2JHZV9R"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let currentUser = null;
+        let allTickets = [];
+        let activeSellerPhone = '';
+        let unsubscribeTickets = null;
+        let pendingTicketRef = null;
+        let pendingTicketFingerprint = null;
+
+        // Initialize Authentication
+        async function initAuth() {
+            try {
+                await signInAnonymously(auth);
+            } catch (err) {
+                console.error("Auth initialization failed:", err);
+                document.getElementById('user-status-text').innerText = 'Auth unavailable';
+                showToast("Authentication failed. Enable Anonymous Authentication in Firebase, or configure a sign-in provider.", "error");
+            }
+        }
+
+        // Listen for Auth State
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('user-status-text').innerText = `ID: ${user.uid.substring(0, 6)}...`;
+                document.getElementById('my-user-id').innerText = user.uid;
+                listenToTickets();
+            }
+        });
+
+        // Use direct 'tickets' collection for simplified user database structure
+        function getTicketsCollectionRef() {
+            return collection(db, 'tickets');
+        }
+
+        // Real-time Firestore Listener. Metadata distinguishes local optimistic data from server-confirmed data.
+        function listenToTickets() {
+            if (unsubscribeTickets) unsubscribeTickets();
+            const ticketsRef = getTicketsCollectionRef();
+            const errorBox = document.getElementById('tickets-error');
+            errorBox?.classList.add('hidden');
+            document.getElementById('user-status-text').innerText = 'Connecting to database…';
+
+            unsubscribeTickets = onSnapshot(ticketsRef, { includeMetadataChanges: true }, (snapshot) => {
+                allTickets = [];
+                snapshot.forEach((docSnap) => {
+                    allTickets.push({
+                        id: docSnap.id,
+                        ...docSnap.data(),
+                        _hasPendingWrites: docSnap.metadata.hasPendingWrites
+                    });
+                });
+
+                allTickets.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+                document.getElementById('tickets-loading')?.classList.add('hidden');
+                const statusText = document.getElementById('user-status-text');
+                statusText.innerText = snapshot.metadata.fromCache ? 'Syncing…' : 'Firebase live';
+                const statusDot = document.querySelector('#user-status-pill span:first-child');
+                if (statusDot) {
+                    statusDot.className = snapshot.metadata.fromCache
+                        ? 'w-2 h-2 rounded-full bg-amber-400 animate-pulse'
+                        : 'w-2 h-2 rounded-full bg-emerald-500';
+                }
+                errorBox?.classList.add('hidden');
+                filterTickets();
+            }, (error) => {
+                console.error('Firestore ticket listener failed:', error.code, error.message, error);
+                document.getElementById('tickets-loading')?.classList.add('hidden');
+                document.getElementById('tickets-container').innerHTML = '';
+                document.getElementById('empty-state')?.classList.add('hidden');
+                document.getElementById('user-status-text').innerText = 'Database error';
+                const statusDot = document.querySelector('#user-status-pill span:first-child');
+                if (statusDot) statusDot.className = 'w-2 h-2 rounded-full bg-red-500';
+                const message = error.code === 'permission-denied'
+                    ? 'Firestore rules are blocking listing reads. Publish the included firestore.rules file in Firebase Console.'
+                    : error.code === 'unavailable'
+                        ? 'Firestore is unreachable. Check your network and make sure Cloud Firestore has been created for project ticketswap-9535e.'
+                        : `Firebase error (${error.code || 'unknown'}): ${error.message || 'Open DevTools Console for details.'}`;
+                document.getElementById('tickets-error-message').innerText = message;
+                errorBox?.classList.remove('hidden');
+                showToast(message, 'error');
+            });
+        }
+
+        window.retryTicketConnection = function() {
+            document.getElementById('tickets-loading')?.classList.remove('hidden');
+            listenToTickets();
+        };
+
+        // Handle Add/List Ticket Form Submit
+        window.handleListTicket = async function(event) {
+            event.preventDefault();
+            if (!currentUser) {
+                showToast("Still connecting to Firebase. Wait a moment, then try again.", "warning");
+                return;
+            }
+
+            const sellingPriceInput = document.getElementById('form-selling-price');
+            const originalPriceInput = document.getElementById('form-original-price');
+            const quantityInput = document.getElementById('form-quantity');
+            const phoneInput = document.getElementById('form-phone');
+            const sellingPrice = Number(sellingPriceInput.value);
+            const originalPrice = originalPriceInput.value.trim() === '' ? 0 : Number(originalPriceInput.value);
+            const quantity = Number(quantityInput.value);
+            const phone = phoneInput.value.replace(/\D/g, '');
+
+            if (!Number.isFinite(sellingPrice) || sellingPrice < 0 ||
+                !Number.isFinite(originalPrice) || originalPrice < 0 ||
+                !Number.isInteger(quantity) || quantity < 1 || quantity > 10 ||
+                !/^[0-9]{10}$/.test(phone)) {
+                showToast("Check the price, quantity, and 10-digit phone number.", "warning");
+                return;
+            }
+
+            const eventDateValue = document.getElementById('form-datetime').value;
+            if (!eventDateValue || Number.isNaN(new Date(eventDateValue).getTime())) {
+                showToast("Please enter a valid event date and time.", "warning");
+                return;
+            }
+
+            const btn = document.getElementById('submit-ticket-btn');
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Publishing...`;
+
+            try {
+                const ticketData = {
+                    eventName: document.getElementById('form-event-name').value.trim(),
+                    category: document.getElementById('form-category').value,
+                    eventDate: document.getElementById('form-datetime').value,
+                    quantity,
+                    originalPrice,
+                    sellingPrice,
+                    sellerName: document.getElementById('form-seller-name').value.trim(),
+                    phone,
+                    notes: document.getElementById('form-notes').value.trim() || 'None',
+                    status: 'AVAILABLE',
+                    sellerUid: currentUser.uid,
+                    createdAt: serverTimestamp()
+                };
+
+                const fingerprint = JSON.stringify({
+                    eventName: ticketData.eventName, category: ticketData.category,
+                    eventDate: ticketData.eventDate, quantity: ticketData.quantity,
+                    originalPrice: ticketData.originalPrice, sellingPrice: ticketData.sellingPrice,
+                    sellerName: ticketData.sellerName, phone: ticketData.phone, notes: ticketData.notes,
+                    sellerUid: ticketData.sellerUid
+                });
+                if (!pendingTicketRef || pendingTicketFingerprint !== fingerprint) {
+                    pendingTicketRef = doc(getTicketsCollectionRef());
+                    pendingTicketFingerprint = fingerprint;
+                }
+                const writingRef = pendingTicketRef;
+                const writePromise = setDoc(writingRef, ticketData);
+                let timeoutId;
+                const timeoutPromise = new Promise((_, reject) => {
+                    timeoutId = setTimeout(() => reject(new Error('WRITE_TIMEOUT: The server has not confirmed this listing yet. It may appear only in this browser until Firebase syncs. Check Firestore setup, rules, and Network/Console errors before retrying.')), 15000);
+                });
+                await Promise.race([writePromise, timeoutPromise]);
+                clearTimeout(timeoutId);
+
+                pendingTicketRef = null;
+                pendingTicketFingerprint = null;
+                showToast("Ticket published and confirmed by Firebase!", "success");
+                document.getElementById('list-ticket-form').reset();
+                setMinimumEventDate();
+                switchTab('explore');
+            } catch (err) {
+                console.error("Ticket publish failed:", err?.code || 'no-code', err?.message || err, err);
+                const message = err?.message || '';
+                if (err?.code === 'permission-denied' || message.includes('permission-denied')) {
+                    showToast("Firebase rejected the write (permission-denied). Publish firestore.rules in the correct Firebase project.", "error");
+                } else if (err?.code === 'unavailable') {
+                    showToast("Firestore is offline or unreachable. Check your connection and Firebase project/database.", "error");
+                } else if (message.includes('WRITE_TIMEOUT')) {
+                    showToast("Not confirmed by Firebase yet. Your form is kept; check the Database and Console before retrying.", "error");
+                } else if (err?.code === 'unauthenticated') {
+                    showToast("Your sign-in session expired. Refresh the page and try again.", "error");
+                } else {
+                    showToast(`Firebase publish error (${err?.code || 'unknown'}). Open DevTools Console for details.`, "error");
+                }
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Publish Ticket Listing`;
+            }
+        };
+
+        // Filter and Render Tickets
+        window.filterTickets = function() {
+            const searchQuery = document.getElementById('search-input')?.value.toLowerCase() || '';
+            const categoryFilter = document.getElementById('filter-event-type')?.value || 'ALL';
+            const statusFilter = document.getElementById('filter-status')?.value || 'AVAILABLE';
+
+            const filtered = allTickets.filter(ticket => {
+                const matchesSearch = (ticket.eventName || '').toLowerCase().includes(searchQuery) || 
+                                      (ticket.sellerName || '').toLowerCase().includes(searchQuery);
+                const matchesCategory = categoryFilter === 'ALL' || ticket.category === categoryFilter;
+                const matchesStatus = statusFilter === 'ALL' || ticket.status === statusFilter;
+
+                return matchesSearch && matchesCategory && matchesStatus;
+            });
+
+            renderTickets(filtered);
+            renderMyTickets();
+        };
+
+        // Render Explore Cards Grid
+        function renderTickets(tickets) {
+            const container = document.getElementById('tickets-container');
+            const emptyState = document.getElementById('empty-state');
+            const countLabel = document.getElementById('ticket-count');
+
+            if (!container) return;
+            container.innerHTML = '';
+            countLabel.innerText = tickets.length;
+
+            if (tickets.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            emptyState.classList.add('hidden');
+
+            tickets.forEach(ticket => {
+                const discount = (ticket.originalPrice && ticket.originalPrice > ticket.sellingPrice)
+                    ? Math.round(((ticket.originalPrice - ticket.sellingPrice) / ticket.originalPrice) * 100) 
+                    : 0;
+
+                const parsedDate = ticket.eventDate ? new Date(ticket.eventDate) : null;
+                const formattedDate = parsedDate && !Number.isNaN(parsedDate.getTime())
+                    ? parsedDate.toLocaleString('en-IN', {
+                        day: 'numeric', month: 'short', year: 'numeric',
+                        hour: '2-digit', minute: '2-digit'
+                    })
+                    : 'Date not provided';
+
+                const isSold = ticket.status === 'SOLD';
+                const isPending = ticket._hasPendingWrites === true;
+
+                const cardHtml = `
+                    <div class="glass-card rounded-2xl p-5 border border-gray-800 flex flex-col justify-between hover:border-gray-700 transition duration-200 ${isSold ? 'opacity-60' : ''}">
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-start gap-2">
+                                <span class="text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-md bg-brand-500/20 text-brand-400 border border-brand-500/30">
+                                    ${escapeHtml(ticket.category || 'Event')}
+                                </span>
+                                ${isPending
+                                    ? `<span class="text-xs bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded font-bold"><i class="fa-solid fa-rotate animate-spin mr-1"></i>SYNCING</span>`
+                                    : isSold
+                                        ? `<span class="text-xs bg-red-500/20 text-red-400 border border-red-500/30 px-2 py-0.5 rounded font-bold">SOLD</span>`
+                                        : discount > 0 ? `<span class="text-xs bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded font-bold">${discount}% OFF</span>` : ''
+                                }
+                            </div>
+
+                            <div>
+                                <h3 class="font-bold text-base text-white line-clamp-1">${escapeHtml(ticket.eventName)}</h3>
+                                <p class="text-xs text-gray-400 mt-1 flex items-center gap-1.5">
+                                    <i class="fa-regular fa-clock text-brand-500"></i> ${formattedDate}
+                                </p>
+                            </div>
+
+                            <div class="bg-gray-900/80 rounded-xl p-3 border border-gray-800/80 flex justify-between items-center">
+                                <div>
+                                    <span class="text-[10px] text-gray-400 uppercase block">Price per ticket</span>
+                                    <span class="text-[10px] text-gray-500 block mt-0.5">${ticket.quantity || 1} available</span>
+                                    <div class="flex items-baseline gap-1.5">
+                                        <span class="text-lg font-extrabold text-white">₹${formatRupees(ticket.sellingPrice)}</span>
+                                        ${ticket.originalPrice ? `<span class="text-xs text-gray-500 line-through">₹${formatRupees(ticket.originalPrice)}</span>` : ''}
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <span class="text-[10px] text-gray-400 uppercase block">Seller</span>
+                                    <span class="text-xs font-semibold text-gray-200">${escapeHtml(ticket.sellerName)}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 pt-3 border-t border-gray-800/80">
+                            ${isPending
+                                ? `<button disabled class="w-full bg-gray-800 text-amber-300 font-semibold py-2.5 rounded-xl text-xs cursor-wait"><i class="fa-solid fa-spinner animate-spin mr-1"></i> Waiting for Firebase sync</button>`
+                                : isSold
+                                    ? `<button disabled class="w-full bg-gray-800 text-gray-500 font-semibold py-2.5 rounded-xl text-xs cursor-not-allowed">Ticket Sold</button>`
+                                    : `<button type="button" data-contact-ticket="${escapeHtml(ticket.id)}" class="contact-ticket-btn w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-2">
+                                        <i class="fa-solid fa-phone"></i> Contact Seller
+                                       </button>`
+                            }
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', cardHtml);
+            });
+        }
+
+        // Render My Tickets View
+        function renderMyTickets() {
+            const container = document.getElementById('my-tickets-container');
+            const emptyState = document.getElementById('my-tickets-empty');
+            if (!container || !currentUser) return;
+
+            const myTickets = allTickets.filter(t => t.sellerUid === currentUser.uid);
+            container.innerHTML = '';
+
+            if (myTickets.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            emptyState.classList.add('hidden');
+
+            myTickets.forEach(ticket => {
+                const isSold = ticket.status === 'SOLD';
+
+                const cardHtml = `
+                    <div class="glass-card rounded-2xl p-5 border border-gray-800 space-y-4">
+                        <div class="flex justify-between items-center">
+                            <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-gray-800 text-gray-300">
+                                ${escapeHtml(ticket.category || 'Other')}
+                            </span>
+                            <span class="text-xs font-bold ${isSold ? 'text-red-400' : 'text-emerald-400'}">
+                                ${isSold ? '● Marked Sold' : '● Live Listing'}
+                            </span>
+                        </div>
+
+                        <div>
+                            <h3 class="font-bold text-white">${escapeHtml(ticket.eventName)}</h3>
+                            <p class="text-xs text-gray-400 mt-1">Price per ticket: <strong class="text-white">₹${formatRupees(ticket.sellingPrice)}</strong> · ${ticket.quantity || 1} available</p>
+                        </div>
+
+                        <div class="flex gap-2 pt-2 border-t border-gray-800">
+                            <button onclick="toggleSoldStatus('${ticket.id}', '${ticket.status}')" class="flex-1 bg-gray-800 hover:bg-gray-700 text-xs text-gray-200 py-2 rounded-lg font-medium transition">
+                                ${isSold ? 'Mark Available' : 'Mark as Sold'}
+                            </button>
+                            <button onclick="deleteTicket('${ticket.id}')" class="bg-red-500/20 hover:bg-red-500/30 text-red-400 text-xs px-3 py-2 rounded-lg font-medium transition">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', cardHtml);
+            });
+        }
+
+        // Toggle Ticket Sold Status
+        window.toggleSoldStatus = async function(docId, currentStatus) {
+            try {
+                const newStatus = currentStatus === 'SOLD' ? 'AVAILABLE' : 'SOLD';
+                const docRef = doc(db, 'tickets', docId);
+                await updateDoc(docRef, { status: newStatus });
+                showToast(`Listing status updated to ${newStatus}`, "info");
+            } catch (err) {
+                showToast("Could not update ticket status", "error");
+            }
+        };
+
+        // Delete Ticket Listing
+        window.deleteTicket = async function(docId) {
+            if (!confirm("Are you sure you want to delete this listing?")) return;
+            try {
+                const docRef = doc(db, 'tickets', docId);
+                await deleteDoc(docRef);
+                showToast("Listing deleted", "info");
+            } catch (err) {
+                showToast("Could not delete ticket", "error");
+            }
+        };
+
+        // Contact Modal Logic
+        window.openContactModal = function(ticket) {
+            activeSellerPhone = ticket.phone;
+            document.getElementById('modal-event-title').innerText = ticket.eventName;
+            document.getElementById('modal-seller-name').innerText = `Seller: ${ticket.sellerName}`;
+            document.getElementById('modal-price').innerText = `₹${formatRupees(ticket.sellingPrice)} / ticket`;
+            document.getElementById('modal-quantity').innerText = `${ticket.quantity || 1} Pass(es)`;
+            document.getElementById('modal-notes').innerText = ticket.notes || 'None';
+            document.getElementById('modal-phone-num').innerText = ticket.phone || 'Not provided';
+
+            const cleanPhone = String(ticket.phone || '').replace(/\D/g, '');
+            const defaultMsg = encodeURIComponent(`Hi ${ticket.sellerName}, I saw your listing for "${ticket.eventName}" on TicketSwap. Is it still available?`);
+            
+            document.getElementById('modal-whatsapp-link').href = cleanPhone ? `https://wa.me/91${cleanPhone}?text=${defaultMsg}` : '#';
+            document.getElementById('modal-call-link').href = cleanPhone ? `tel:${cleanPhone}` : '#';
+
+            document.getElementById('contact-modal').classList.remove('hidden');
+        };
+
+        window.closeModal = function() {
+            document.getElementById('contact-modal').classList.add('hidden');
+        };
+
+        window.copyPhoneNumber = function() {
+            if (!activeSellerPhone) return;
+            const tempInput = document.createElement('input');
+            tempInput.value = activeSellerPhone;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+            showToast("Phone number copied to clipboard!", "success");
+        };
+
+        // Tab Switching Helper
+        window.switchTab = function(tabName) {
+            const views = ['explore', 'list', 'mylistings'];
+            views.forEach(view => {
+                document.getElementById(`tab-${view}-view`)?.classList.add('hidden');
+                
+                const navBtn = document.getElementById(`nav-${view}`);
+                if (navBtn) {
+                    navBtn.className = 'tab-btn px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center gap-2 text-gray-400 hover:text-white';
+                }
+
+                const mobBtn = document.getElementById(`mobile-nav-${view}`);
+                if (mobBtn) {
+                    mobBtn.className = 'flex flex-col items-center gap-1 text-gray-400';
+                }
+            });
+
+            document.getElementById(`tab-${tabName}-view`)?.classList.remove('hidden');
+            
+            const activeNav = document.getElementById(`nav-${tabName}`);
+            if (activeNav) {
+                activeNav.className = 'tab-btn px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center gap-2 text-white bg-brand-600';
+            }
+
+            const activeMob = document.getElementById(`mobile-nav-${tabName}`);
+            if (activeMob) {
+                activeMob.className = 'flex flex-col items-center gap-1 text-brand-500';
+            }
+        };
+
+        window.resetFilters = function() {
+            document.getElementById('search-input').value = '';
+            document.getElementById('filter-event-type').value = 'ALL';
+            document.getElementById('filter-status').value = 'AVAILABLE';
+            filterTickets();
+        };
+
+        // Toast Helper
+        function showToast(message, type = "info") {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const bgColors = {
+                success: "bg-emerald-600 text-white",
+                error: "bg-red-600 text-white",
+                warning: "bg-amber-600 text-white",
+                info: "bg-gray-800 text-white border border-gray-700"
+            };
+
+            toast.className = `p-3 rounded-xl shadow-xl text-xs font-semibold flex items-center justify-between gap-3 pointer-events-auto animate-in slide-in-from-bottom duration-200 ${bgColors[type] || bgColors.info}`;
+            toast.innerHTML = `
+                <span>${escapeHtml(message)}</span>
+                <button onclick="this.parentElement.remove()" class="opacity-70 hover:opacity-100"><i class="fa-solid fa-xmark"></i></button>
+            `;
+
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.remove();
+            }, 3500);
+        }
+
+        function escapeHtml(text) {
+            return String(text ?? '')
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+        }
+
+        function formatRupees(value) {
+            const amount = Number(value);
+            return Number.isFinite(amount) && amount >= 0
+                ? amount.toLocaleString('en-IN', { maximumFractionDigits: 2 })
+                : '0';
+        }
+
+        // Delegate contact clicks so ticket data is never serialized into inline JavaScript.
+        document.addEventListener('click', (event) => {
+            const button = event.target.closest('[data-contact-ticket]');
+            if (!button) return;
+            const ticket = allTickets.find(item => item.id === button.dataset.contactTicket);
+            if (ticket && ticket.status !== 'SOLD') window.openContactModal(ticket);
+        });
+
+        // Close the contact dialog when the backdrop is clicked or Escape is pressed.
+        document.getElementById('contact-modal')?.addEventListener('click', (event) => {
+            if (event.target.id === 'contact-modal') window.closeModal();
+        });
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') window.closeModal();
+        });
+
+        // Set the earliest selectable event time to now and initialize the app.
+        function setMinimumEventDate() {
+            const field = document.getElementById('form-datetime');
+            if (!field) return;
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            field.min = now.toISOString().slice(0, 16);
+        }
+
+        window.onload = function() {
+            setMinimumEventDate();
+            initAuth();
+        };
+    </script>
+</body>
+</html>
